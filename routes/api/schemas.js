@@ -1,8 +1,10 @@
 const Joi = require('joi');
-const { Schema, model } = require('mongoose');
+<<<<<<< Updated upstream
+const { Schema, model, SchemaTypes } = require('mongoose');
+=======
+const { Schema, model,SchemaTypes } = require('mongoose');
+>>>>>>> Stashed changes
 const myCustomJoi = Joi.extend(require('joi-phone-number'));
-
-
 
 const schemaPut = Joi.object({
     name: Joi.string()
@@ -46,6 +48,10 @@ const ContactSchema = new Schema({
         type: Boolean,
         default: false,
     }, 
+    owner: {
+        type: SchemaTypes.ObjectId,
+        ref: 'user',
+    }
 })
 
 const Contact = model('contact', ContactSchema)
