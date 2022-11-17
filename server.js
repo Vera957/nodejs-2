@@ -14,7 +14,6 @@ async function main() {
     }
 
     await mongoose.connect(HOST_DB);
-
     console.log("Database connection successful");
 
     app.listen(PORT, (err) => {
@@ -26,8 +25,6 @@ async function main() {
     process.exit(1);
   }
 }
-
-main()
-
+main();
 
 
