@@ -1,8 +1,7 @@
 const express = require('express')
-const contactsRouter = express.Router()
-const {auth} = require('../../models/auth')
+const router = express.Router()
 
-const controller= require('../../models/contacts')
+const controller = require('../../models/contacts')
 
 function tryCatchWrapper(endpointFn) {
   return async (req, res, next) => {
@@ -14,26 +13,18 @@ function tryCatchWrapper(endpointFn) {
   };
 }
 
-contactsRouter.get('/', tryCatchWrapper(auth), tryCatchWrapper(controller.listContacts))
+router.get('/', tryCatchWrapper(controller.listContacts))
 
-contactsRouter.delete('/:id', tryCatchWrapper(auth), tryCatchWrapper(controller.removeContact))
+router.delete('/:id', tryCatchWrapper(controller.removeContact))
 
-contactsRouter.post('/', tryCatchWrapper(auth), tryCatchWrapper(controller.addContact))
+router.post('/', tryCatchWrapper(controller.addContact))
 
-contactsRouter.get('/:id', tryCatchWrapper(auth), tryCatchWrapper(controller.getContactById))
+router.get('/:id', tryCatchWrapper(controller.getContactById))
 
-contactsRouter.put('/:id', tryCatchWrapper(auth), tryCatchWrapper(controller.updateContact))
+router.put('/:id', tryCatchWrapper(controller.updateContact))
 // PATCH /api/contacts/:contactId/favorite
-<<<<<<< Updated upstream
-contactsRouter.patch('/favorite/:id', tryCatchWrapper(auth), tryCatchWrapper(controller.updateFavorite))
-
-
-module.exports = { contactsRouter, tryCatchWrapper }
-=======
 router.patch('/favorite/:id', tryCatchWrapper(controller.updateFavorite))
+  
 
-
-
-module.exports = { router, tryCatchWrapper }
->>>>>>> Stashed changes
+module.exports = router
 
