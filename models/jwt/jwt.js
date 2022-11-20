@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 const jwt = require("jsonwebtoken")
 
 const { JWT_SECRET } = process.env
@@ -16,44 +15,16 @@ async function createToken(id) {
 }
 
 
-/* async function main() {
-    try {
-        const token = jwt.sign(data, JWT_SECRET, {
-            expiresIn: "15s",
-        });
-        console.log("token:", token);
-    } catch (error) {
-        console.error(error)
-        
-    } */
-async function checkToken(token) {
-=======
-const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = process.env
 
-async function createToken(data) {
-    const token = jwt.sign(data, JWT_SECRET, {
-        expiresIn: "10h",
-    });
-    console.log("token:", token);
-    return token;
-}
-
-async function verifyToken(token) {
->>>>>>> Stashed changes
+/* async function verifyToken(token) {
     try {
         const verifiedToken = jwt.verify(token, JWT_SECRET);
         console.log("verifiedToken:", verifiedToken);
     } catch (error) {
         console.error(error);
     }
-<<<<<<< Updated upstream
    }
 
-
-   
-
-    // 3 - expired token
     try {
         const expiredToken =
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOjEsImlhdCI6MTY2ODEwMjMzNiwiZXhwIjoxNjY4MTAyMzUxfQ.ComTw5yf1dGdh07W_d3w9KW2CO1DEDbpHfgaZeYFClw";
@@ -62,26 +33,8 @@ async function verifyToken(token) {
     } catch (error) {
         // TokenExpiredError jwt expired
         console.error("EXPIRED_TOKEN_ERROR: ", error.name, error.message);
-    }
+    } */
 
-    // 4 - signature is invalid
-    // 3 - expired token
-   /* try {
-        const invalidSignatureToken = `${token}A`;
-        const verifiedToken = jwt.verify(invalidSignatureToken, JWT_SECRET);
-        console.log("verifiedToken:", verifiedToken);
-    } catch (error) {
-        // JsonWebTokenError invalid signature
-        console.error("INVALID_SIGNATURE_ERROR: ", error.name, error.message);
-    }
-}
-main(); */
-
-module.exports = {
-    createToken,
-    checkToken,
-=======
-}
 
 async function checkTermOfToken(token) {
     try {
@@ -94,7 +47,6 @@ async function checkTermOfToken(token) {
 
 module.exports = {
     createToken,
-    verifyToken,
     checkTermOfToken,
->>>>>>> Stashed changes
+  //  checkToken,
 }

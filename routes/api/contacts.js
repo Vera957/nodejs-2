@@ -1,8 +1,8 @@
 const express = require('express')
 const contactsRouter = express.Router()
-const {auth} = require('../../models/auth')
+const { auth } = require('../../models/auth')
 
-const controller= require('../../models/contacts')
+const controller = require('../../models/contacts')
 
 function tryCatchWrapper(endpointFn) {
   return async (req, res, next) => {
@@ -23,17 +23,8 @@ contactsRouter.post('/', tryCatchWrapper(auth), tryCatchWrapper(controller.addCo
 contactsRouter.get('/:id', tryCatchWrapper(auth), tryCatchWrapper(controller.getContactById))
 
 contactsRouter.put('/:id', tryCatchWrapper(auth), tryCatchWrapper(controller.updateContact))
-// PATCH /api/contacts/:contactId/favorite
-<<<<<<< Updated upstream
+
 contactsRouter.patch('/favorite/:id', tryCatchWrapper(auth), tryCatchWrapper(controller.updateFavorite))
 
-
-module.exports = { contactsRouter, tryCatchWrapper }
-=======
-router.patch('/favorite/:id', tryCatchWrapper(controller.updateFavorite))
-
-
-
-module.exports = { router, tryCatchWrapper }
->>>>>>> Stashed changes
+module.exports = { tryCatchWrapper, contactsRouter }
 
