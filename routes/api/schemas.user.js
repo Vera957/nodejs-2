@@ -6,7 +6,6 @@ const userDataValidatorJoi = Joi.object({
     password: Joi.string().min(5).alphanum().required(),
 })
 
-
 const UserSchema = new Schema({
         password: {
             type: String,
@@ -25,7 +24,9 @@ const UserSchema = new Schema({
         token: {
             type: String,
             default: null,
-        }, 
+    }, 
+         avatarURL: String,
+
 })
 
 const User = model('user', UserSchema)

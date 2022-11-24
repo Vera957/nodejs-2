@@ -1,24 +1,28 @@
-const { userVerifyJoi, User } = require('../routes/api/user.schema')
-const { createToken } = require('./jwt/jwt')
+const { userDataValidatorJoi, User } = require('../routes/api/schemas.user')
+// const { verifyToken } = require('../middlewares/jwt')  // create!!!!
 const bcrypt = require("bcrypt");
-const {  Unauthorized } = require("http-errors");
+const { Unauthorized } = require("http-errors");
+const gravatar = require('gravatar');
+const path = require("path");
+const fs = require("fs/promises");
+const jwt = require('jsonwebtoken')
+const { JWT_SECRET } = process.env
+const jimp = require('jimp')
 
-
-async function signUpUser(req, res, next) {
-    console.log('signUp')
-    const { body } = req
-    const checkedUser = userVerifyJoi.validate(body)
+async function signup(req, res, next) {
+    const checkedUser = userDataValidatorJoi.validate(req.body)
     const { error, value } = checkedUser;
-    console.log('error, value', error, value)
     if (error) {
-        console.log('error')
         return res.status(404).json({ message: error.message })
     } else {
         const notUniqueEmail = await User.findOne({ email: value.email })
         if (notUniqueEmail) return res.status(400).json({ message: 'user with current email already exist' })
         const salt = await bcrypt.genSalt()
-        const hashedPassword = await bcrypt.hash(value.password, salt)
-        value.password = hashedPassword
+        const crashedPass = await bcrypt.hash(value.password, salt)
+        value.password = crashedPass
+        console.log('value.password', value.password)
+        const url = gravatar.url(value.email, { s: '200', r: 'pg', d: '404' });
+        value.avatarUrl = url;
         await User.create(value);
         return res.json({
             user: {
@@ -30,23 +34,26 @@ async function signUpUser(req, res, next) {
     }
 }
 
-async function loginUser(req, res, next) {
-    console.log('login')
-    const { body } = req
-    const joiValidator = userVerifyJoi.validate(body)
+async function login(req, res, next) {
+    const joiValidator = userDataValidatorJoi.validate(req.body)
     const { value, error } = joiValidator
     if (error) throw new Error(error.message)
     const user = await User.findOne({ email: value.email });
     const pass = await bcrypt.compare(value.password, user.password)
+    console.log('user exist, pass ok', user, pass)
     if (!user || !pass) {
         throw new Unauthorized("message: Email or password is wrong");
     }
-    const token = await createToken({ _id: user._id })
-    user.token = token;
-    const x = await User.findByIdAndUpdate(user._id, user);
-    console.log('x', x)
+    const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET,
+        {
+            expiresIn: "15h",
+        }
+    );
+
+    user.token = token
+    await User.findByIdAndUpdate(user._id, user);
     return res.json({
-        token,
+        token: user.token,
         user: {
             email: user.email,
             subscription: user.subscription,
@@ -54,92 +61,62 @@ async function loginUser(req, res, next) {
     })
 }
 
-async function logoutUser(req, res, next) {
-    const { body: { _id } } = req
-    try {
-        const currentUser = await User.findById(_id)
-        if (currentUser.token === null) return res.json({ mes: 'alredy loged out' })
-        currentUser.token = null
-        await User.findByIdAndUpdate(_id, currentUser, { new: true })
-        console.log('updated null token')
-        return res.json({ 'user': 'logout succsess' })
-
-    } catch (error) {
-        console.log('error logout', error)
-    }
+async function logout(req, res, next) {
+    const { user } = req
+    user.token = null
+    await User.findByIdAndUpdate(user._id, user)
+    return res.status(204).json({ logout: true })
 }
 
-
 async function getUsers(req, res, next) {
-    console.log('getUsers', getUsers)
     const allUsers = await User.find()
-    console.log('allUsers', allUsers)
     return res.json({ 'users': allUsers })
 }
 
-async function currentUser(req, res, next) {
-    console.log('cutrrentUserFunc')
-    console.log('req.user cutrrentUserFunc', req.user)
+async function current(req, res, next) {
     return res.json({
         "email": req.user.email,
         "subscription": req.user.subscription
     })
 }
 
-
-module.exports = {
-    getUsers,
-    signUpUser,
-    loginUser,
-    logoutUser,
-    currentUser,
-}
-
-const { userDataValidatorJoi } = require('../routes/api/schemasUser')
-
-async function connectSuccsessfull(req, res, next) {
-    const data = await User.find()
-    return res.json({ 'connected to user, data': data })
-}
-
-
-async function signUp(req, res, next) {
-    console.log('signUp start')
-    const { body } = req
-    console.log('body signUp', body)
-    const dataCheck = await userDataValidatorJoi(body)
-    const { value, error } = dataCheck
-    if (error) {
-        throw new Error(error)
-    } else {
-        const { password, email } = value
-        const uniqueEmail = await User.find({ email })
-        if (!uniqueEmail) return res.status(409).json({ "message": "Email in use" })
-        else {
-            const token = await createToken(value)
-            const salt = await bcrypt.genSalt();
-            const hashedPassword = await bcrypt.hash(password, salt);
-            await User.create({
-                hashedPassword,
-                email,
-                token,
-            })
-            return res.status(201).json({
-                "user": {
-                    "email": email,
-                    "subscription": "starter"
-                }
-            })
+async function avatar(req, res, next) {
+    try {
+        console.log('avatar')
+        const { file, user } = req
+        const result = gravatar.url(user.email, { s: "200", r: "pg", d: "404" });
+        user.avatarURL = result
+        user.avatarURL = user.avatarURL + file.filename;  // test it
+        const newPath = path.join(__dirname, "../public/images/", file.filename); // change path?
+        await fs.rename(file.path, newPath, { new: true });
+        await User.findByIdAndUpdate(user._id, user)
+        const image = await jimp.read(newPath);
+        image.resize(250, 250);
+        await image.writeAsync(newPath);
+        return res.status(201).json({
+            data: {
+                avatar: user.avatarURL
+            },
+        });
+    }
+    catch (error) {
+        if (req.file) {
+            await fs.unlink(req.file.path);
         }
+        console.error("Got error:", error.name, error.message);
+        return res.status(500).json({
+            error: error.message,
+        });
     }
 }
 
 
-
-
-
 module.exports = {
-    signUp,
-    connectSuccsessfull,
+    signup,
+    login,
+    current,
+    logout,
+    getUsers,
+    avatar,
 }
 
