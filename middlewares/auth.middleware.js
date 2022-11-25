@@ -1,20 +1,17 @@
 const { Unauthorized } = require("http-errors");
 const jwt = require("jsonwebtoken");
-const { User } = require("../routes/api/schemasUser");
+const { User } = require("../routes/api/schemas.user");
 
 const { JWT_SECRET } = process.env;
 
 async function auth(req, res, next) {
-    console.log("auth middleware", req.headers.authorization);
     const authHeader = req.headers.authorization || "";
 
     const [tokenType, token] = authHeader.split(" ");
     if (tokenType === "Bearer" && token) {
         try {
             const verifiedToken = jwt.verify(token, JWT_SECRET);
-            console.log("token is valid", verifiedToken);
-
-            const user = await User.findById(verifiedToken._id);
+            const user = await User.findById(verifiedToken.id);
             if (!user) {
                 next(new Unauthorized("No user with such id"));
             }
@@ -22,10 +19,7 @@ async function auth(req, res, next) {
             if (!user.token) {
                 next(new Unauthorized("token is invalid"));
             }
-
-            console.log("user:", user);
-            req.user = user; // NOTE: pass user to next middleware
-
+            req.user = user; 
             return next();
         } catch (error) {
             if (error.name === "TokenExpiredError") {

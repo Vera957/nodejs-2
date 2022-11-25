@@ -1,5 +1,4 @@
-const { Contact } = require('../routes/api/schemas')
-const { schemaPost, schemaPut } = require('../routes/api/schemas')
+const { Contact, schemaPost, schemaPut } = require('../routes/api/schemas.contacts')
 
 async function listContacts(req, res, next) {
   const owner = req.user._id
@@ -10,17 +9,16 @@ async function listContacts(req, res, next) {
 async function getContactById(req, res, next) {
   const { id } = req.params;
   const contact = await Contact.findById(id)
-  if (contact.owner._id === req.user) {
+  if (contact.owner._id.toString() === req.user._id.toString()) {
     return res.json({ contactToFind: contact })
   } return res.status(404).json({ message: "contact has another owner" })
-
 }
 
 async function removeContact(req, res, next) {
   const owner = req.user
   const { id } = req.params
   const findenContact = await Contact.findById(id)
-  if (findenContact.owner === owner) {
+  if (findenContact.owner.toString() === owner._id.toString()) {
     await Contact.findByIdAndDelete(id)
     return res.json({ message: `${id} deleted` })
   }
@@ -51,7 +49,7 @@ async function updateContact(req, res, next) {
     throw new Error(error)
   } else {
     const contact = await Contact.findById(id)
-    if (contact.owner === owner) {
+    if (contact._id === owner._id) {
       const updatedContact = await Contact.findByIdAndUpdate(id, value, { new: true });
       return res.json({ message: `${updatedContact} updated successful` });
     }
@@ -60,30 +58,30 @@ async function updateContact(req, res, next) {
 }
 
 async function updateFavorite(req, res, next) {
-  const owner = req.user
+  console.log('updateFavorite', updateFavorite)
+  const owner = req.user._id
   const { id } = req.params;
+  const contactFinden = await Contact.findById(id)
+  console.log('contactFinden', contactFinden)
+ 
   if (req.body.favorite === undefined) {
-    res.status(400).json({ "message": "missing field favorite" })
+    return res.status(400).json({ "message": "missing field favorite" })
   } else {
-    const contactFinden = await Contact.findById(id)
-    const contact = await updateStatusContact(id, req.body)
-    if (!contact) return res.status(400).json({ message: "not found" })
-    if (contactFinden.owner === owner) {
-      return res.json({ "message": contact })
-    }
+    if (contactFinden.owner.toString() === owner.toString()) {
+      const contact = await updateStatusContact(contactFinden, req.body)
+      console.log('contact', contact)
+      if (!contact) return res.status(400).json({ message: "not found" })
+        return res.json({ "message": contact })
+    }   
   }
 }
 
-async function updateStatusContact(req, res, next) {
-  // id, body
-  const { body: { favorite, id }, user } = req
-  const contact = await Contact.findById(id)
-  if (contact.owner === user) {
-    const { name, email, phone } = contact;
-    await Contact.findByIdAndUpdate(id, { name, email, phone, favorite }, { new: true })
-    return { id, name, email, favorite }
-  } return res.status(404).json({ message: "contact has another owner" })
-}
+async function updateStatusContact(contact, body) {
+  contact.favorite = body.favorite
+  console.log('contact', contact)
+  await Contact.findByIdAndUpdate(contact._id, contact, { new: true })
+    return contact
+  } 
 
 module.exports = {
   listContacts,
