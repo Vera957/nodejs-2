@@ -1,13 +1,14 @@
 const { userDataValidatorJoi, User } = require('../routes/api/schemas.user')
-// const { verifyToken } = require('../middlewares/jwt')  // create!!!!
 const bcrypt = require("bcrypt");
-const { Unauthorized } = require("http-errors");
+const { Unauthorized, NotFound } = require("http-errors");
 const gravatar = require('gravatar');
 const path = require("path");
 const fs = require("fs/promises");
 const jwt = require('jsonwebtoken')
 const { JWT_SECRET } = process.env
 const jimp = require('jimp')
+const uniq = require('uniqid');
+const { mailSender } = require('../middlewares/nodemailer');
 
 async function signup(req, res, next) {
     const checkedUser = userDataValidatorJoi.validate(req.body)
@@ -15,17 +16,24 @@ async function signup(req, res, next) {
     if (error) {
         return res.status(404).json({ message: error.message })
     } else {
+        // unique email
         const notUniqueEmail = await User.findOne({ email: value.email })
         if (notUniqueEmail) return res.status(400).json({ message: 'user with current email already exist' })
+        // pass
         const salt = await bcrypt.genSalt()
         const crashedPass = await bcrypt.hash(value.password, salt)
         value.password = crashedPass
-        console.log('value.password', value.password)
+        // avatar
         const url = gravatar.url(value.email, { s: '200', r: 'pg', d: '404' });
         value.avatarUrl = url;
+        // verify email
+        value.verificationToken = uniq()
+        await mailSender(value.email, value.verifyToken)
+
         await User.create(value);
         return res.json({
-            user: {
+            "message": "Verification email sent",
+            "user": {
                 'email': value.email,
                 "subscription": "starter",
             }
@@ -40,10 +48,10 @@ async function login(req, res, next) {
     if (error) throw new Error(error.message)
     const user = await User.findOne({ email: value.email });
     const pass = await bcrypt.compare(value.password, user.password)
-    console.log('user exist, pass ok', user, pass)
     if (!user || !pass) {
         throw new Unauthorized("message: Email or password is wrong");
     }
+    if (!user.verify) { return res.status(500).json({ message: 'please, verify your email' }) }
     const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET,
         {
             expiresIn: "15h",
@@ -110,6 +118,27 @@ async function avatar(req, res, next) {
     }
 }
 
+async function verifyUser(req, res, next) {
+    const { verificationToken } = req.params
+    const user = await User.findOne({ verificationToken })
+    if (!user) throw new NotFound("No user found");
+    user.verify = true
+    await User.findByIdAndUpdate(user._id, user)
+    return res.json({ message: 'Verification successful' })
+}
+
+async function postVerifyUser(req, res, next) {
+    // Получает body в формате { email }
+    const { email } = req.body
+    if (!email) return res.status(400).json({ "message": "missing required field email" })
+    const user = await User.findOne({ email })
+    if (user.verify) return res.status(400).json({ message: "Verification has already been passed" })
+    if (user.verificationToken) {
+        await mailSender(email, user.verificationToken)
+        return res.json({ "message": "Verification email sent" })
+    }
+}
+
 
 module.exports = {
     signup,
@@ -118,5 +147,7 @@ module.exports = {
     logout,
     getUsers,
     avatar,
+    verifyUser,
+    postVerifyUser,
 }
 

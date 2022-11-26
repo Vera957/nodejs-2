@@ -4,6 +4,7 @@ const cors = require('cors')
 const { Types } = require('mongoose')
 const { contactsRouter } = require('./routes/api/contacts')
 const { routerUser } = require('./routes/api/user')
+
 const app = express()
 const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short'
 

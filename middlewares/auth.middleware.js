@@ -15,7 +15,6 @@ async function auth(req, res, next) {
             if (!user) {
                 next(new Unauthorized("No user with such id"));
             }
-
             if (!user.token) {
                 next(new Unauthorized("token is invalid"));
             }
