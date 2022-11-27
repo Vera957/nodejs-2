@@ -62,7 +62,6 @@ async function updateFavorite(req, res, next) {
   const owner = req.user._id
   const { id } = req.params;
   const contactFinden = await Contact.findById(id)
-  console.log('contactFinden', contactFinden)
  
   if (req.body.favorite === undefined) {
     return res.status(400).json({ "message": "missing field favorite" })
@@ -78,7 +77,6 @@ async function updateFavorite(req, res, next) {
 
 async function updateStatusContact(contact, body) {
   contact.favorite = body.favorite
-  console.log('contact', contact)
   await Contact.findByIdAndUpdate(contact._id, contact, { new: true })
     return contact
   } 

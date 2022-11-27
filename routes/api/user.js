@@ -27,6 +27,8 @@ routerUser.get('/logout',tryCatchWrapper(auth), tryCatchWrapper(userController.l
 routerUser.get('/current', tryCatchWrapper(auth), tryCatchWrapper(userController.current))
 routerUser.post('/', tryCatchWrapper(userController.signup))
 routerUser.patch('/avatars', tryCatchWrapper(auth), upload.single("image"), tryCatchWrapper(userController.avatar))
+routerUser.get('/verify/:verificationToken', tryCatchWrapper(userController.verifyUser))
+routerUser.post('/verify', tryCatchWrapper( userController.postVerifyUser))
 
 module.exports = { routerUser, userController }
 
